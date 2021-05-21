@@ -1,8 +1,28 @@
 import React from "react"
 import Square from "./Square"
+import { boardStyle, boardRowStyle } from "./css/game"
 
-class Board extends React.Component {
-    constructor(props) {
+type BoardProps = {
+    winFunction: (letter: Player) => void
+}
+
+type BoardState = {
+    squares: Ficha[],
+    xNext: boolean,
+    finished: boolean,
+    winner: Ficha | null
+}
+
+export type Player = 'X' | 'O'
+
+export type Ficha = {
+    letter: Player | null
+    color: string
+}
+
+
+class Board extends React.Component<BoardProps, BoardState> {
+    constructor(props: BoardProps) {
         super(props);
         this.state = {
             squares: Array(9).fill({ letter: null, color: "black" }),
@@ -13,16 +33,17 @@ class Board extends React.Component {
         };
     }
 
-    maybeRenderRestart() {
+    maybeRenderRestart(): JSX.Element | undefined {
         if (this.state.finished) {
-            return <button onClick={() => this.reset()}> restart
+            return <button onClick={() => this.reset()}>
+                restart
           </button>
         }
     }
 
     //Controlamos el fin del juego en una única función
     //Esta función se encargará de gestionar el estado para determinar si se ha acabado y si hay un ganador
-    checkFinished(squares) {
+    checkFinished(squares: Ficha[]): boolean {
         if (this.state.finished) {
             //Si ya estaba acabado sigue acabado
             return true
@@ -49,7 +70,7 @@ class Board extends React.Component {
         return true
     }
 
-    reset() {
+    reset(): void {
         this.setState({
             squares: Array(9).fill({ letter: null, color: "black" }),
             xNext: true,
@@ -59,7 +80,7 @@ class Board extends React.Component {
         })
     }
 
-    mark(i) {
+    mark(i: number): void {
         let squares = this.state.squares
         // Se puede mover ficha si el juego no ha terminado y la casilla está vacía. Sabemos si está terminado directamente del estado.
         if (!this.state.finished && !squares[i].letter) {
@@ -70,18 +91,18 @@ class Board extends React.Component {
         }
     }
 
-    renderSquare(i) {
-        return <Square value={this.state.squares[i].letter} checkSquare={() => this.mark(i)} color={this.state.squares[i].color} />;
+    renderSquare(i: number): JSX.Element {
+        return <Square letter={this.state.squares[i].letter} checkSquare={() => this.mark(i)} color={this.state.squares[i].color} />;
     }
 
-    getTurn() {
+    getTurn(): Ficha {
         if (this.state.xNext) {
             return { letter: "X", color: "blue" };
         }
         return { letter: "O", color: "orange" };
     }
 
-    calculateWinner(squares) {
+    calculateWinner(squares: Ficha[]): Ficha | null {
         const lines = [
             [0, 1, 2],
             [3, 4, 5],
@@ -95,7 +116,7 @@ class Board extends React.Component {
         for (let i = 0; i < lines.length; i++) {
             const [a, b, c] = lines[i];
             if (squares[a].letter && squares[a].letter === squares[b].letter && squares[a].letter === squares[c].letter) {
-                this.props.winFunction(squares[a].letter)
+                this.props.winFunction(squares[a].letter as Player)
                 squares[a].color = "red"; squares[b].color = "red"; squares[c].color = "red"
                 // no es seguro comparar objetos con el triple = ; usar función equals que implementan los objetos para ver si son igual, pero es un poco más incómodo. difici establecer el criterio que los hace iguales. EJ: coche : modelos, gama, color, etc...
                 return squares[a];
@@ -104,45 +125,63 @@ class Board extends React.Component {
         return null;
     }
 
-    renderStatus() {
+
+    // ###########
+    // # RENDERING
+    // ###########
+
+    renderStatus(): JSX.Element {
         //Determinamos si se ha acabado leyendo el estado
         if (this.state.finished) {
             if (this.state.winner) {
                 //Obtenemos al ganador leyendo del estado
-                return <div>Winner: <a style={{ color: this.state.winner.color }}>
+                return <div>
+                    Winner: <a style={{ color: this.state.winner.color }}>
                     {this.state.winner.letter}</a>
                 </div>
             } else {
-                return "Game Finished: Draw"
+                return <div>
+                    Game Finished: Draw
+                </div>
             }
         } else {
-            return <div>Next player: <a style={{ color: this.getTurn().color }}>{this.getTurn().letter}</a></div>
+            return <div>Next player: <a style={{ color: this.getTurn().color, padding:40 }}>{this.getTurn().letter}</a></div>
         }
     }
 
-    render() {
+    render(): JSX.Element {
         let status = this.renderStatus()
         return (
-            <div>
-                <div className="status">{status}</div>
-                <div className="board-row">
-                    {this.renderSquare(0)}
-                    {this.renderSquare(1)}
-                    {this.renderSquare(2)}
+            <div >
+                <div className="status" style={{
+                    display:"flex",
+                    backgroundColor:"green",
+                    fontFamily:"sans-serif" ,
+                    fontSize:32,  
+                    justifyContent: "center"    
+                    }}>
+                        {status}
                 </div>
-                <div className="board-row">
-                    {this.renderSquare(3)}
-                    {this.renderSquare(4)}
-                    {this.renderSquare(5)}
+                <div style={{ backgroundColor: "blue", ...boardStyle }}>
+                    <div style={boardRowStyle}>
+                        {this.renderSquare(0)}
+                        {this.renderSquare(1)}
+                        {this.renderSquare(2)}
+                    </div>
+                    <div style={boardRowStyle}>
+                        {this.renderSquare(3)}
+                        {this.renderSquare(4)}
+                        {this.renderSquare(5)}
+                    </div>
+                    <div style={boardRowStyle}>
+                        {this.renderSquare(6)}
+                        {this.renderSquare(7)}
+                        {this.renderSquare(8)}
+                    </div>
                 </div>
-                <div className="board-row">
-                    {this.renderSquare(6)}
-                    {this.renderSquare(7)}
-                    {this.renderSquare(8)}
-                </div>
-                <div button="restart">
-                    {this.maybeRenderRestart()}
-                </div>
+                <button onClick={() => this.maybeRenderRestart()}>
+                    Restart
+                </button>
             </div>
         );
     }
